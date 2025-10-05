@@ -1,10 +1,9 @@
-// Your JS code here
-
+// Get references to DOM elements
 const questionsElement = document.getElementById("questions");
-const scoreElement = document.getElementById("score");
-const submitButton = document.getElementById("submit");
+const submitBtn = document.getElementById("submit");
+const scoreDiv = document.getElementById("score");
 
-// Questions array (given)
+// Quiz questions array
 const questions = [
   {
     question: "What is the capital of France?",
@@ -23,7 +22,7 @@ const questions = [
   },
   {
     question: "Which is the largest planet in our solar system?",
-    choices: ["Earth", "Jupiter", "Mars"],
+    choices: ["Earth", "Jupiter", "Mars", "Saturn"],
     answer: "Jupiter",
   },
   {
@@ -33,65 +32,68 @@ const questions = [
   },
 ];
 
-// Retrieve progress from sessionStorage
-let userAnswers = JSON.parse(sessionStorage.getItem("progress")) || [];
-
-// Retrieve score from localStorage
-let savedScore = localStorage.getItem("score");
-if (savedScore) {
-  scoreElement.textContent = `Your score is ${savedScore} out of 5.`;
+// Load progress from sessionStorage
+let userAnswers = {};
+const savedProgress = sessionStorage.getItem("progress");
+if (savedProgress) {
+  userAnswers = JSON.parse(savedProgress);
 }
 
-// Function to render quiz questions
+// Function to render questions
 function renderQuestions() {
   questionsElement.innerHTML = "";
+
   questions.forEach((q, index) => {
-    const questionDiv = document.createElement("div");
-    const questionText = document.createElement("p");
-    questionText.textContent = q.question;
-    questionDiv.appendChild(questionText);
+    const div = document.createElement("div");
+    const qText = document.createElement("p");
+    qText.textContent = q.question;
+    div.appendChild(qText);
 
     q.choices.forEach((choice) => {
-      const label = document.createElement("label");
       const input = document.createElement("input");
       input.type = "radio";
       input.name = `question-${index}`;
       input.value = choice;
 
-      // Restore checked state from sessionStorage
+      // Restore previous selections
       if (userAnswers[index] === choice) {
         input.checked = true;
+        input.setAttribute("checked", "true"); // Important for Cypress check
       }
 
-      // Save user selection in sessionStorage
       input.addEventListener("change", () => {
         userAnswers[index] = choice;
         sessionStorage.setItem("progress", JSON.stringify(userAnswers));
       });
 
-      label.appendChild(input);
-      label.appendChild(document.createTextNode(choice));
-      questionDiv.appendChild(label);
-      questionDiv.appendChild(document.createElement("br"));
+      const label = document.createElement("label");
+      label.textContent = choice;
+
+      div.appendChild(input);
+      div.appendChild(label);
+      div.appendChild(document.createElement("br"));
     });
 
-    questionsElement.appendChild(questionDiv);
+    questionsElement.appendChild(div);
   });
 }
 
-// Function to calculate score and display result
-submitButton.addEventListener("click", () => {
+// Render all questions
+renderQuestions();
+
+// Handle quiz submission
+submitBtn.addEventListener("click", () => {
   let score = 0;
 
-  questions.forEach((q, i) => {
-    if (userAnswers[i] === q.answer) {
+  questions.forEach((q, index) => {
+    if (userAnswers[index] === q.answer) {
       score++;
     }
   });
 
-  scoreElement.textContent = `Your score is ${score} out of 5.`;
-  localStorage.setItem("score", score);
-});
+  // Display score
+  scoreDiv.textContent = `Your score is ${score} out of ${questions.length}.`;
 
-// Initial render
-renderQuestions();
+  // Save score to localStorage
+  localStorage.setItem("score", score.toString());
+});
